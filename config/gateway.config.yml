@@ -1,0 +1,82 @@
+http:
+  port: 8080
+admin:
+  port: 9876
+  host: localhost
+apiEndpoints:
+  # see: http://www.express-gateway.io/docs/configuration/gateway.config.yml/apiEndpoints
+  api:
+    - host: 'localhost'
+      paths: ['/user', '/user/:id']
+      methods: ["GET"]
+      #scopes: ["user"]
+    - host: 'localhost'
+      paths: ['/user', '/user/:id', '/user/login']
+      methods: ["PUT", "POST", "DELETE"]
+      #scopes: ["admin"]
+  myApi:
+    host: 'localhost'
+    paths: '/getTanks'
+  myApiRest:
+    host: 'localhost'
+    paths: '/posts'
+  adminAPI:
+    host: 'admin.domain.com' # domain where admin API is exposed
+
+serviceEndpoints:
+  # see: http://www.express-gateway.io/docs/configuration/gateway.config.yml/serviceEndpoints
+  jsonplaceholder:
+    url: 'http://localhost:8899'
+  waterService:
+    url: 'https://water-level-demo.herokuapp.com'
+  restDummyService:
+    url: 'https://jsonplaceholder.typicode.com'
+  adminBackend:
+    url: 'http://localhost:9876' # this is EG admin API
+policies:
+  - basic-auth
+  - cors
+  - expression
+  - key-auth
+  - log
+  - oauth2
+  - proxy
+  - rate-limit
+  - jwt
+pipelines:
+  # see: https://www.express-gateway.io/docs/configuration/gateway.config.yml/pipelines
+  - name: one
+    apiEndpoints:
+      - api
+    policies:
+      - proxy:
+        - action:
+            serviceEndpoint: jsonplaceholder
+            changeOrigin: true
+  - name: two
+    apiEndpoints:
+      - myApi
+    policies:
+      #- key-auth:
+      - proxy:
+        - action:
+            serviceEndpoint: waterService
+            changeOrigin: true
+  - name: three
+    apiEndpoints:
+      - myApiRest
+    policies:
+      #- key-auth:
+      - proxy:
+        - action:
+            serviceEndpoint: restDummyService
+            changeOrigin: true
+  - name: adminAPI
+    apiEndpoints:
+      - adminAPI
+    policies:
+    #  - key-auth: # this is intentionaly disabled to allow temporary access
+      - proxy:
+          - action:
+              serviceEndpoint: adminBackend
+              changeOrigin: true
